@@ -33,6 +33,8 @@ ${BUILD_PATH}/tests.o: ${TEST_PATH}/tests.c
 ${BUILD_PATH}/pthread_groups.o: ${SRC_PATH}/pthread_groups.c
 	${CC} -o $@ $^ -c
 
+${BUILD_PATH}/test_framework.o: ${TEST_PATH}/test_framework.h
+	${CC} -o $@ $^ -c
 .PHONY: clean
 
 clean:

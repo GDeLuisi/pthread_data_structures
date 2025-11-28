@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
-//#define DEBUG
+#define DEBUG
 #include "debug.h"
 
 #define EXIT_FAILURE 1
@@ -33,10 +33,11 @@ static pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 
  p_threadgroup* create_thread_group(target t_targets[] ,void* restrict args[],size_t tn){
 	size_t i;
-	 p_threadgroup *tg = malloc(sizeof(*tg) + sizeof( t_info)*tn);
 	int ret;
+	p_threadgroup *tg = malloc(sizeof(*tg) + sizeof( t_info)*tn);
 	pthread_t tmp_thread;
-	 t_info tmp_info;
+	t_info tmp_info;
+
 	pthread_mutex_lock(&count_lock);
 	dprint("Creating threadgroup %d\n",tg_count);
 	tg->groupId = tg_count++;
@@ -58,7 +59,6 @@ static pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 }
 
 int cancel_thread_group( p_threadgroup* tg){
-
 	size_t len = tg->size;
 	size_t i;
 	int res;
@@ -71,12 +71,15 @@ int cancel_thread_group( p_threadgroup* tg){
 	return 0;
 }
 
-int join_thread_group( p_threadgroup* tg){
+//TODO: Caputure an array of void* as output
+int join_thread_group( p_threadgroup* tg,void* outputs[]){
 		size_t len = tg->size;
 		size_t i;
 		int res;
-		for (i=0;i<len;i++){
-			res = pthread_join(tg->t_comps[i].thread_id,NULL);
+
+		for (i=0;i<len;++i){
+			dprint("Internal arr: %ld \n",outputs[i]);
+			res = pthread_join(tg->t_comps[i].thread_id,&outputs[i]);
 			if (res!=0) return res;
 		}
 		free(tg);

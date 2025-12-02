@@ -30,11 +30,13 @@ run_test:
 	
 ${BUILD_PATH}/tests.o: ${TEST_PATH}/tests.c 
 	${CC} -o $@ $^ -c -Iinclude
+
 ${BUILD_PATH}/pthread_groups.o: ${SRC_PATH}/pthread_groups.c
 	${CC} -o $@ $^ -c -Iinclude
 
-${BUILD_PATH}/test_framework.o: ${TEST_PATH}/test_framework.h
-	${CC} -o $@ $^ -c
+${BUILD_PATH}/queue.o: ${SRC_PATH}/queue.c
+	${CC} -o $@ $^ -c -Iinclude
+
 .PHONY: clean
 
 clean:

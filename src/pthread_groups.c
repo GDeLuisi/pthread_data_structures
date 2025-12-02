@@ -30,8 +30,7 @@ typedef struct ThreadGroup{
 }p_threadgroup;
 
 static pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
-
- p_threadgroup* create_thread_group(target t_targets[] ,void* restrict args[],size_t tn){
+	p_threadgroup* create_thread_group(target t_targets[] ,void* restrict args[],size_t tn){
 	size_t i;
 	int ret;
 	p_threadgroup *tg = malloc(sizeof(*tg) + sizeof( t_info)*tn);
@@ -58,6 +57,7 @@ static pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 	return tg;
 }
 
+
 int cancel_thread_group( p_threadgroup* tg){
 	size_t len = tg->size;
 	size_t i;
@@ -71,7 +71,6 @@ int cancel_thread_group( p_threadgroup* tg){
 	return 0;
 }
 
-//TODO: Caputure an array of void* as output
 int join_thread_group( p_threadgroup* tg,void* outputs[]){
 		size_t len = tg->size;
 		size_t i;

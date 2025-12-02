@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include "pthread_groups.h"
+#include "queue.h"
 #include <unistd.h>
 #define TEST_SUITE_ON 
 #define DEBUG
@@ -55,6 +56,28 @@ TEST("multi_threadgroup"){
 	for (i = 0; i < size ; ++i)
 		dprint("Output %d : %d \n",i,*(int *)outputs[i]);
 	TEST_ASSERTION(0,0);
+}
+TEST("queue_creation"){
+	queue* q = createQueue(sizeof(int));
+	int tmp = 12;
+	int ret_value = 5;
+	if (q == NULL){
+		printf("Failed to create queue");
+		return 1;
+	}
+	enqueue(q,&tmp);
+	front(q,&ret_value);
+	dprint("Value retrieved: %d\n",ret_value);
+
+	int tmp2 = 25;
+	enqueue(q,&tmp2);
+	dequeue(q,&ret_value);
+	dprint("Value dequeued: %d\n",ret_value);
+	dprint("Length of queue: %ld\n", getSize(q));
+	front(q,&ret_value);
+	dprint("Peek value: %d\n",ret_value);
+	TEST_ASSERTION(ret_value,25)
+	destroyQueue(&q);
 }
 END_TESTS;
 

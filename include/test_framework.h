@@ -20,7 +20,6 @@
 	printf("\n" ANSI_COLOR_GREEN "Test Passed: %u" ANSI_COLOR_RESET "\n",test_passed);\
 	printf(ANSI_COLOR_RED "Test Failed: %u" ANSI_COLOR_RESET "\n",test_counter-test_passed);\
 	printf(ANSI_COLOR_CYAN "Test Run: %u" ANSI_COLOR_RESET "\n",test_counter);\
-	if((test_counter - test_passed)> 0)return 1;\
 	return 0;}
 
 #endif

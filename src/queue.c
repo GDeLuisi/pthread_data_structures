@@ -49,19 +49,19 @@ typedef struct Queue
 
 queue *createQueue(size_t allocSize)
 {
-	dprint("Creating Queue with data size: %ld\n",allocSize);
+  dprint("Creating Queue with data size: %ld\n",allocSize);
   queue *q = (queue *)malloc(sizeof(queue));
   if(q == NULL)
   {
     return NULL;
   }
 
-	dprint("Allocated queue: %ld\n",sizeof(queue));
-		q->allocationSize = allocSize;
+  dprint("Allocated queue: %ld\n",sizeof(queue));
+  q->allocationSize = allocSize;
   q->size = 0;
   q->head = q->tail = NULL;
-	int res = pthread_mutex_init(&(q->mutex_lock),NULL); 
-	res = pthread_cond_init(&(q->empty_condition),NULL);
+  int res = pthread_mutex_init(&(q->mutex_lock),NULL); 
+  res = pthread_cond_init(&(q->empty_condition),NULL);
   return q;
 }
 
@@ -182,32 +182,38 @@ queue *dequeue(queue *q, void *data)
 			return NULL;
 		}
 
-		acquire_lock(&(q->mutex_lock));
 		while(!isEmpty(q))
 		{
+            acquire_lock(&(q->mutex_lock));
 			node *temp = q->head;
 			q->head = q->head->next;
 			free(temp->data);
 			free(temp);
 			q->size--;
+            release_lock(&(q->mutex_lock));
 		}
-
-		release_lock(&(q->mutex_lock));
 		return q;
 	}
 
 	size_t getSize(queue *q)
 	{
+        acquire_lock(&(q->mutex_lock));
 		if(q == NULL)
 		{
 			return 0;
 		}
-		return q->size;
+        size_t size = q->size;
+        release_lock(&(q->mutex_lock));
+		return size;
 	}
 
 	bool isEmpty(queue *q)
 	{
-		return q->size == 0 ? true : false;
+        
+        acquire_lock(&(q->mutex_lock));
+        bool is_empty = q->size == 0 ? true : false;
+        release_lock(&(q->mutex_lock));
+        return is_empty;
 	}
 
 	size_t getAllocationSize(queue *q)

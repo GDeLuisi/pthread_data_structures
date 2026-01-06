@@ -12,7 +12,6 @@
 do { \
 	if (THREADSAFE_ACTIVE){\
 	int r = pthread_mutex_lock(lock);\
-	if (r!=0){printf("Lock not acquired, error %d",r) ;return NULL;} \
 	}\
 }while (0)
 
@@ -20,7 +19,6 @@ do { \
 do { \
 	if (THREADSAFE_ACTIVE){\
 	int r = pthread_mutex_unlock(lock);\
-	if (r!=0){printf("Lock not acquired, error %d",r) ;return NULL;} \
 	}\
 }while (0)
 
@@ -28,7 +26,6 @@ do { \
 do { \
 	if (THREADSAFE_ACTIVE){\
 	int r = pthread_cond_wait(cond,lock);\
-	if (r!=0){printf("Lock not acquired, error %d",r) ;return NULL;} \
 	}\
 }while (0)
 
@@ -36,7 +33,6 @@ do { \
 do { \
 	if (THREADSAFE_ACTIVE){\
 	int r = pthread_cond_signal(cond);\
-	if (r!=0){printf("Lock not acquired, error %d",r) ;return NULL;} \
 	}\
 }while (0)
 

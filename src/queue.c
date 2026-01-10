@@ -4,38 +4,7 @@
 #include "debug.h"
 #include <string.h>
 #include <pthread.h>
-
-
-typedef struct Node
-{
-  void *data;
-  struct Node *next;
-} node;
-
-node *createNode(void *data, size_t allocSize)
-{
-	dprint("Creating node of size: %ld\n",sizeof(node));
-  node *toInsert = (node *)malloc(sizeof(node));
-  if(toInsert == NULL)
-  {
-    return NULL;
-  }
-
-
-	dprint("Allocating space for data of size: %ld\n",allocSize);
-  toInsert->data = malloc(allocSize);
-  if(toInsert->data == NULL)
-  {
-    free(toInsert);
-    return NULL;
-  }
-
-	dprint("Copying data to node in address %ld\n",data);
-  memcpy(toInsert->data, data, allocSize);
-  toInsert->next = NULL;
-
-  return toInsert;
-}
+#include "commons.h"
 
 typedef struct Queue
 {

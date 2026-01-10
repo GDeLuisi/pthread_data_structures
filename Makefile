@@ -37,6 +37,9 @@ ${BUILD_PATH}/pthread_groups.o: ${SRC_PATH}/pthread_groups.c
 ${BUILD_PATH}/queue.o: ${SRC_PATH}/queue.c
 	${CC} -o $@ $^ -c -Iinclude
 
+${BUILD_PATH}/commons.o: ${SRC_PATH}/commons.c
+	${CC} -o $@ $^ -c -Iinclude
+
 .PHONY: clean
 
 clean:

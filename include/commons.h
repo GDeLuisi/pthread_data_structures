@@ -1,3 +1,6 @@
+#ifndef __COMMONS_H
+#define __COMMONS_H
+#include <assert.h>
 typedef struct Node
 {
     void *data;
@@ -22,3 +25,24 @@ typedef struct Cell {
 
 node *createNode(void *data, size_t allocSize);
 cell *createCell(void *data, size_t allocSize,KeyType k_type,acc_key_types key);
+
+#define acquire_lock(lock)\
+do { \
+    assert( 0 == pthread_mutex_lock(lock));\
+}while (0)
+
+#define release_lock(lock)\
+do { \
+    assert( 0 == pthread_mutex_unlock(lock));\
+}while (0)
+
+#define condition_wait(cond,lock)\
+do { \
+    assert( 0 == pthread_cond_wait(cond,lock));\
+}while (0)
+
+#define condition_signal(cond)\
+do { \
+    assert( 0 == pthread_cond_signal(cond));\
+}while (0)
+#endif

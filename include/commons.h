@@ -1,30 +1,20 @@
 #ifndef __COMMONS_H
 #define __COMMONS_H
 #include <assert.h>
+#include <stdbool.h>
 typedef struct Node
 {
     void *data;
     struct Node *next;
 } node;
 
-typedef enum { STR_TYPE, INT_TYPE , U_INT_TYPE } KeyType;
 
-typedef union{
-    char *str;
-    int num_int;
-    size_t u_num_int;
-} acc_key_types;
-
-typedef struct Cell {
-    void *data;
-    struct Cell *next;
-    acc_key_types key;
-    KeyType k_type;
-}cell;
-
+typedef void* (*callback)(void *);
+typedef unsigned int (*hash)(void*,unsigned int);
+typedef void (*void_callback)(void *);
+typedef bool (*comparator)(void *,void *);
 
 node *createNode(void *data, size_t allocSize);
-cell *createCell(void *data, size_t allocSize,KeyType k_type,acc_key_types key);
 
 #define acquire_lock(lock)\
 do { \

@@ -40,6 +40,9 @@ ${BUILD_PATH}/queue.o: ${SRC_PATH}/queue.c
 ${BUILD_PATH}/commons.o: ${SRC_PATH}/commons.c
 	${CC} -o $@ $^ -c -Iinclude
 
+${BUILD_PATH}/dictionary.o: ${SRC_PATH}/dictionary.c
+	${CC} -o $@ $^ -c -Iinclude
+
 .PHONY: clean
 
 clean:

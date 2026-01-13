@@ -1,5 +1,6 @@
 #define THREADSAFE
 #include <stdio.h>
+#include "dictionary.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include "pthread_groups.h"
@@ -63,6 +64,64 @@ void* test_func3(void* arg){
 BEGIN_TESTS;
 void* outputs[3];
 int i;
+TEST("create_entry"){
+    char ck[] = "chiave";
+    int cval = 12;
+    entry* e = createEntry(ck,sizeof(ck),&cval,sizeof(int));
+    printf("created entry\n");
+    int *res = malloc(sizeof(int));
+    printf("Entry Resp: %d\n",*(int*)(e->value));
+    TEST_ASSERTION(*(int*)(e->value),12)
+}
+TEST("dictionary_creation"){
+    
+    hashTable *h = create_hashTable(CHAR,0,NULL,NULL);
+   
+    char mykey[] = "chiave";
+    char myvalue[] = "valore";
+    printf("Inserting  %s:%s\n",mykey,myvalue);
+    h->set(h,mykey,myvalue,sizeof(myvalue));
+    strcpy(mykey,"chiav");
+    strcpy(myvalue,"valor");
+    printf("Inserting  %s:%s\n",mykey,myvalue);
+    h->set(h,mykey,myvalue,sizeof(myvalue));
+    strcpy(mykey,"chia");
+    int myvalint = 12;
+    printf("Inserting  %s:%d\n",mykey,myvalint);
+    h->set(h,mykey,&myvalint,sizeof(int));
+    int* resp_h_int = malloc(sizeof(int)); 
+    printf("Searching this integer\n");
+    h->get(h,mykey,resp_h_int);
+    printf("Found this integer: %d\n",*resp_h_int);
+    TEST_ASSERTION(*resp_h_int,12)
+}
+TEST("dict_usage"){
+    
+    hashTable *h1 = create_hashTable(CHAR,0,NULL,NULL);
+    char mykey2[] = "chiave";
+    char myvalue2[] = "valore";
+    printf("Inserting  %s:%s\n",mykey2,myvalue2);
+    h1->set(h1,mykey2,myvalue2,sizeof(myvalue2));
+    strcpy(mykey2,"chiav");
+    strcpy(myvalue2,"valor");
+    printf("Inserting  %s:%s\n",mykey2,myvalue2);
+    h1->set(h1,mykey2,myvalue2,sizeof(myvalue2));
+    strcpy(mykey2,"chia");
+    int myvalint2 = 12;
+    printf("Inserting  %s:%d\n",mykey2,myvalint2);
+    h1->set(h1,mykey2,&myvalint2,sizeof(int));
+    int* resp_h_int2 = malloc(sizeof(int)); 
+    char* resp_h_char2 = malloc(250);
+    strcpy(mykey2,"chiav");
+    printf("Searching this string\n");
+    h1->get(h1,mykey2,resp_h_char2);
+    strcpy(mykey2,"chia");
+    printf("Searching this integer\n");
+    h1->remove(h1,mykey2,resp_h_int2);
+    printf("Found this string: %s\n",resp_h_char2);
+    printf("Found this integer: %d\n",*resp_h_int2);
+    TEST_ASSERTION(*resp_h_int2,12)
+}
 TEST("threadgroup_creation"){
 	target t_targets[3];
 	int* my_args[3] = {(int*)11,(int*)24,(int*)63};

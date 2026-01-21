@@ -101,3 +101,6 @@ void *find(queue *q, bool (*predicate)(void *data));
  */
 void *findMem(queue *q, void *data);
 
+size_t batchDequeue(queue *q,void* data,size_t batch_size);
+
+queue *batchEnqueue(queue *q,void* data,size_t batch_size);

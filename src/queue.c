@@ -34,22 +34,9 @@ queue *createQueue(size_t allocSize)
   return q;
 }
 
-queue *enqueue(queue *q, void *data)
+
+void _enqueue(queue *q,node *toInsert)
 {
-  if(q == NULL || data == NULL)
-  {
-    return NULL;
-  }
-
-	dprint("Allocating node with size: %ld\n",q->allocationSize);
-  node *toInsert = createNode(data, q->allocationSize);
-  if(toInsert == NULL)
-  {
-    return NULL;
-  }
-
-	acquire_lock(&(q->mutex_lock));
-	dprint("Queue size before enqueue: %ld\n",q->size);
 	if(q->size == 0)
 	{ // First insertion
 		q->head = q->tail = toInsert;
@@ -61,162 +48,239 @@ queue *enqueue(queue *q, void *data)
 	}
 
 	q->size++;
-	release_lock(&(q->mutex_lock));
-	condition_signal(&(q->empty_condition));
-	dprint("Allocated node: %ld\n",q->size);
+    return;
+}
+node  *_dequeue(queue *q, void *data)
+{
+    while (q->size == 0)
+    {
+        dprint("Queue size is %ld, waiting\n",q->size);
+        condition_wait(&(q->empty_condition),&(q->mutex_lock));
+        dprint("Queue size is %ld, resuming\n",q->size);
+    }
+    node *toDel = q->head;
+    if(q->size == 1)
+    {
+        memcpy(data, toDel->data, q->allocationSize);
+        q->head = q->tail = NULL;
+    }
+    else{
+        q->head = q->head->next;
+        memcpy(data, toDel->data, q->allocationSize);
+    }
+    q->size--;
+    return toDel;
+}
 
-	return q;
+queue *enqueue(queue *q, void *data)
+{
+    if(q == NULL || data == NULL)
+    {
+        return NULL;
+    }
+
+    dprint("Allocating node with size: %ld\n",q->allocationSize);
+    dprint("Value inserted is: %d\n",*(int*)data);
+    node *toInsert = createNode(data, q->allocationSize);
+    if(toInsert == NULL)
+    {
+        return NULL;
+    }
+
+    acquire_lock(&(q->mutex_lock));
+    dprint("Queue size before enqueue: %ld\n",q->size);
+    _enqueue(q,toInsert);
+    release_lock(&(q->mutex_lock));
+    condition_signal(&(q->empty_condition));
+    dprint("Allocated node: %ld\n",q->size);
+
+    return q;
 }
 
 queue *dequeue(queue *q, void *data)
 {
-	if(q == NULL)
-	{
-		return NULL;
-	}
+    if(q == NULL)
+    {
+        return NULL;
+    }
+    acquire_lock(&(q->mutex_lock));
+    dprint("Queue size before dequeue: %ld\n",q->size);
+    node *toDel = _dequeue(q,data);
+    dprint("Releasing dequeue lock with size %ld\n",q->size);
+    release_lock(&(q->mutex_lock));
+    free(toDel->data);
+    free(toDel);
+    return q;
+}
 
-	acquire_lock(&(q->mutex_lock));
-	dprint("Queue size before enqueue: %ld\n",q->size);
-	while (q->size == 0)
-	{
-		dprint("Queue size is %ld, waiting\n",q->size);
-		condition_wait(&(q->empty_condition),&(q->mutex_lock));
-		dprint("Queue size is %ld, resuming\n",q->size);
-	}
-	node *toDel = q->head;
-	if(q->size == 1)
-	{
-		memcpy(data, toDel->data, q->allocationSize);
-		free(toDel->data);
-		free(toDel);
-		q->head = q->tail = NULL;
-		q->size--;
-	}
-	else{
-		q->head = q->head->next;
-		memcpy(data, toDel->data, q->allocationSize);
-		free(toDel->data);
-		free(toDel);
-		q->size--;
-	}
-	dprint("Releasing dequeue lock with size %ld\n",q->size);
-	release_lock(&(q->mutex_lock));
-	return q;
-	}
+size_t batchDequeue(queue *q,void* data,size_t batch_size){
+    
+    if(q == NULL)
+    {
+        return NULL;
+    }
 
-	queue *front(queue *q, void *data)
-	{
-		if(q == NULL)
-		{
-			return NULL;
-		}
+    if (batch_size == 0){
+        return q;
+    }
+    void *data_el;
+    size_t toDel_c = 0;
+    size_t size = batch_size;
+    if (size > q->size)
+        size = q->size;
+    node* toDel_array[size];
+    
+    acquire_lock(&(q->mutex_lock));
+    for (size_t i=0;i<size;++i){
+        data_el = data+i*q->allocationSize;
+        toDel_array[i] = _dequeue(q,data_el);
+        toDel_c++;
+    }
+    release_lock(&(q->mutex_lock));
+    for (size_t i=0;i<toDel_c;++i ){
+        free(toDel_array[i]->data);
+        free(toDel_array[i]);
+    }
+    return size;
+}
 
-		if(q->size == 0)
-		{
-			return NULL;
-		}
+queue *batchEnqueue(queue *q,void* data,size_t batch_size){
+    if(q == NULL)
+    {
+        return NULL;
+    }
+    if (batch_size == 0){
+        return q;
+    }
+    void *data_el;
+    node *nd;
+    node** toInsert_array = malloc(sizeof(node*)*batch_size);
+    for (size_t i=0;i<batch_size;i++){
+       data_el = data+i*q->allocationSize;
+       nd = createNode(data_el, q->allocationSize);
+       toInsert_array[i] = nd;
+    }
+    acquire_lock(&(q->mutex_lock));
+    for (size_t i=0;i<batch_size;++i){
+        _enqueue(q,toInsert_array[i]);
+    }
+    release_lock(&(q->mutex_lock));
+    return q;
+}
 
-		dprint("Acquire lock %ld\n",q);
-		acquire_lock(&(q->mutex_lock));
-		memcpy(data, q->head->data, q->allocationSize);
+queue *front(queue *q, void *data)
+{
+    if(q == NULL)
+    {
+        return NULL;
+    }
 
-		release_lock(&(q->mutex_lock));
-		return q;
-	}
+    if(q->size == 0)
+    {
+        return NULL;
+    }
 
-	queue *reverse(queue *q)
-	{
-		if(q == NULL)
-			return NULL;
-		if(q->size == 0)
-			return q; // Nonthing to reverse
-		void *data = malloc(q->allocationSize);
+    dprint("Acquire lock %ld\n",q);
+    acquire_lock(&(q->mutex_lock));
+    memcpy(data, q->head->data, q->allocationSize);
 
-		acquire_lock(&(q->mutex_lock));
-		if(data != NULL)
-		{
-			dequeue(q, data);
-			reverse(q);
-			enqueue(q, data);
-			free(data);
-		}
-		release_lock(&(q->mutex_lock));
-		return q;
-	}
+    release_lock(&(q->mutex_lock));
+    return q;
+}
 
-	queue *clearQueue(queue *q)
-	{
-		if(q == NULL)
-		{
-			return NULL;
-		}
+queue *reverse(queue *q)
+{
+    if(q == NULL)
+        return NULL;
+    if(q->size == 0)
+        return q; // Nonthing to reverse
+    void *data = malloc(q->allocationSize);
 
-		while(!isEmpty(q))
-		{
-            acquire_lock(&(q->mutex_lock));
-			node *temp = q->head;
-			q->head = q->head->next;
-			free(temp->data);
-			free(temp);
-			q->size--;
-            release_lock(&(q->mutex_lock));
-		}
-		return q;
-	}
+    acquire_lock(&(q->mutex_lock));
+    if(data != NULL)
+    {
+        dequeue(q, data);
+        reverse(q);
+        enqueue(q, data);
+        free(data);
+    }
+    release_lock(&(q->mutex_lock));
+    return q;
+}
 
-	size_t getSize(queue *q)
-	{
+queue *clearQueue(queue *q)
+{
+    if(q == NULL)
+    {
+        return NULL;
+    }
+
+    while(!isEmpty(q))
+    {
         acquire_lock(&(q->mutex_lock));
-		if(q == NULL)
-		{
-			return 0;
-		}
-        size_t size = q->size;
+        node *temp = q->head;
+        q->head = q->head->next;
+        free(temp->data);
+        free(temp);
+        q->size--;
         release_lock(&(q->mutex_lock));
-		return size;
-	}
+    }
+    return q;
+}
 
-	bool isEmpty(queue *q)
-	{
-        
-        acquire_lock(&(q->mutex_lock));
-        bool is_empty = q->size == 0 ? true : false;
-        release_lock(&(q->mutex_lock));
-        return is_empty;
-	}
+size_t getSize(queue *q)
+{
+    acquire_lock(&(q->mutex_lock));
+    if(q == NULL)
+    {
+        return 0;
+    }
+    size_t size = q->size;
+    release_lock(&(q->mutex_lock));
+    return size;
+}
 
-	size_t getAllocationSize(queue *q)
-	{
-		if(q == NULL)
-		{
-			return 0;
-		}
+bool isEmpty(queue *q)
+{
 
-		return q->allocationSize;
-	}
+    acquire_lock(&(q->mutex_lock));
+    bool is_empty = q->size == 0 ? true : false;
+    release_lock(&(q->mutex_lock));
+    return is_empty;
+}
 
-	queue *copyQueue(queue *src)
-	{
-		if(src == NULL)
-		{
-			return NULL;
-		}
+size_t getAllocationSize(queue *q)
+{
+    if(q == NULL)
+    {
+        return 0;
+    }
 
-		queue *newQueue = createQueue(src->allocationSize);
-		if(newQueue == NULL)
-		{
-			return NULL;
-		}
+    return q->allocationSize;
+}
 
-		acquire_lock(&(src->mutex_lock));
-  // Iterate through original queue and copy nodes
-  node *currentOriginalNode = src->head;
-  node *previousNewNode = NULL;
-  while(currentOriginalNode != NULL)
-  {
-    enqueue(newQueue, currentOriginalNode->data);
-    currentOriginalNode = currentOriginalNode->next;
-  }
+queue *copyQueue(queue *src)
+{
+    if(src == NULL)
+    {
+        return NULL;
+    }
+
+    queue *newQueue = createQueue(src->allocationSize);
+    if(newQueue == NULL)
+    {
+        return NULL;
+    }
+
+    acquire_lock(&(src->mutex_lock));
+    // Iterate through original queue and copy nodes
+    node *currentOriginalNode = src->head;
+    node *previousNewNode = NULL;
+    while(currentOriginalNode != NULL)
+    {
+        enqueue(newQueue, currentOriginalNode->data);
+        currentOriginalNode = currentOriginalNode->next;
+    }
 
 	release_lock(&(src->mutex_lock));
   return newQueue;

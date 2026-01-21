@@ -6,7 +6,7 @@
 #include <unistd.h>
 #define DEBUG
 #include "debug.h"
-
+#include "dictionary.h"
 #define EXIT_FAILURE 1
 #define handle_error_en(en, msg) \
 			 do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -16,7 +16,7 @@
 
 int tg_count = 0; /*Keeps count of the created thread groups*/
 
-typedef void* ( *target )( void *);
+typedef void* ( *target )( void **);
 
 typedef struct ThreadInfo {
 	pthread_t thread_id;
@@ -30,13 +30,15 @@ typedef struct ThreadGroup{
 }p_threadgroup;
 
 static pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
-	p_threadgroup* create_thread_group(target t_targets[] ,void* restrict args[],size_t tn){
+
+p_threadgroup* create_thread_group(target t_targets[] ,void* restrict args[],size_t tn){
 	size_t i;
 	int ret;
 	p_threadgroup *tg = malloc(sizeof(*tg) + sizeof( t_info)*tn);
 	pthread_t tmp_thread;
 	t_info tmp_info;
 
+    hashTable *context = create_hashTable(CHAR,0,NULL,NULL);
 	pthread_mutex_lock(&count_lock);
 	dprint("Creating threadgroup %d\n",tg_count);
 	tg->groupId = tg_count++;
@@ -45,7 +47,13 @@ static pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 	for(i=0; i<tn;i++){
 		dprint("Creating thread number %ld\n",i);
 		tmp_info.thread_num = i;
-		ret = pthread_create(&tmp_thread,NULL,t_targets[i],(void*)(args+i));
+        //void** newargs = {(void*)context,(void*)(args+i)};
+        void **newargs = malloc(2  * sizeof(void*));
+        newargs[0] = malloc(sizeof(hashTable*));
+        newargs[1] = malloc(sizeof(void *));
+        newargs[0] = context;
+        newargs[1] = (args+i);
+		ret = pthread_create(&tmp_thread,NULL,t_targets[i],newargs);
 		if (ret != 0){
 			handle_error("pthread_create");
 		}

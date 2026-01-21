@@ -11,14 +11,9 @@ entry *createEntry(void *key,size_t key_size,void *data,size_t data_size){
     new->value = malloc(data_size);
     new->key = malloc(key_size);
     new->v_size = data_size;
-
     memcpy(new->value,data,data_size);
     memcpy(new->key,key,key_size);
 
-    printf("rec value: %d\n", *(int*)data);
-    printf("ent value: %d\n", *(int*)new->value);
-    printf("rec key: %s\n", (char*)key);
-    printf("ent key: %s\n", (char*)new->key);
     return new;
 }
 
@@ -32,7 +27,7 @@ void destroyEntry(entry *en){
 bool string_compare(entry *d1,void *d2 ){
     char *data1 = (char*)(d1->key);
     char *data2 = (char*)d2;
-    printf("compare result %d\n",strcmp(data1,data2));
+    //printf("Comparation in progress\n");
     return strcmp(data1,data2) == 0;
 }
 
@@ -47,7 +42,6 @@ unsigned int hash_string(void *data){
 int extend_h_table(hashTable *h)
 {
     if (h->size >= h->capacity){
-        printf("Extending hashtable\n");
         size_t new_capacity = h->capacity * 2;
         entry **newdata = calloc(new_capacity,sizeof(entry*));
         for (int i = 0;i < new_capacity ; ++i)
@@ -58,14 +52,11 @@ int extend_h_table(hashTable *h)
         unsigned int new_i;
         unsigned int h_val;
         for (int i = 0; i<h->size; ++i){
-            printf("copying data position: %d\n",i);
             d = h->entries[i];
-            printf("copied data position: %d\n",i);
             if (d != NULL){
                 for (entry *curr = d; curr!=NULL; curr = curr->next){
                     h_val = h->hash(curr->key);
                     new_i = h_val % new_capacity;
-                    printf("new_i count: %d\n",i);
                     if (newdata[new_i] != NULL)
                         curr->next = newdata[new_i];
                     newdata[new_i] = curr;
@@ -83,12 +74,10 @@ int extend_h_table(hashTable *h)
 int get_h_table(hashTable *h,void* key,void* output)
 {
     unsigned int val = h->hash(key);
-    printf("Capacity: %ld\n",h->capacity);
     unsigned int i = val  % h->capacity;
-    printf("Size: %ld\n",h->size);
-    printf("i count: %d\n",i);
     for(entry *curr = h->entries[i];curr != NULL;curr = curr->next){
-        printf("looking at key: %s\n",curr->key);
+        if (curr == NULL)
+            break;
         if (h->compare(curr,key)){
             memcpy(output,curr->value,curr->v_size);
             return 0;
@@ -99,17 +88,18 @@ int get_h_table(hashTable *h,void* key,void* output)
 
 int set_h_table(hashTable *h,void *key,void *value,size_t v_size)
 {
+    //printf("Extending hashtable if necessary \n");
     int res = h->extend(h);
     if (res != 0)
         return res;
     unsigned int h_val = h->hash(key);
-    printf("Capacity: %ld\n",h->capacity);
     unsigned int i = h_val  % h->capacity;
-    printf("Size: %ld\n",h->size);
-    printf("i count: %d\n",i);
+    //printf("New hashmap position %d\n",i);
     bool inserted = false;
+    //printf("Setting new value of size %lu\n",v_size);
     for(entry *curr = h->entries[i];curr != NULL || inserted; curr = curr->next){
-        printf("looking at key: %s\n",curr->key);
+        if (curr == NULL)
+            break;
         if (h->compare(curr,key)){
             entry *temp = createEntry(key,h->k_size,value,v_size);
             destroyEntry(curr);
@@ -119,7 +109,7 @@ int set_h_table(hashTable *h,void *key,void *value,size_t v_size)
     }
 
     if(! inserted){
-        printf("Creating new head for position %d\n",i);
+        //printf("Creating new head\n");
         entry *temp = createEntry(key,h->k_size,value,v_size);
         if (h->entries[i] == NULL)
             h->entries[i] = temp;
@@ -141,6 +131,8 @@ int remove_h_table(hashTable *h,void *key,void* output){
     int i = 0;
     entry *temp;
     for(entry *curr = h->entries[i_val];curr != NULL;curr = curr->next){
+        if (curr == NULL)
+            break;
         if (i == 0  && h->compare(curr,key)){
             temp = curr;
             h->entries[i_val] = curr->next;
@@ -195,7 +187,7 @@ hashTable *create_hashTable(enum dict_type t,size_t allocSize,bool (*compare_fun
         default:
             return NULL;
     }
-    //printf("Creating hashTable\n");
+    ////printf("Creating hashTable\n");
     hashTable *h = malloc(sizeof(hashTable));
     h->k_size = k_size;
     h->size = 0;
@@ -207,6 +199,7 @@ hashTable *create_hashTable(enum dict_type t,size_t allocSize,bool (*compare_fun
     h->compare = compare;
     h->remove = &remove_h_table;
     h->entries = malloc(sizeof(entry*));
+    h->entries[0] = NULL;
     return h;
 }
         

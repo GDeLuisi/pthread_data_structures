@@ -1,5 +1,6 @@
 #ifndef __DICT_H
 #define __DICT_H
+#include <pthread.h>
 #include "commons.h"
 #define MAX_CHAR_SIZE 255;
 
@@ -14,6 +15,7 @@ entry *createEntry(void *key,size_t key_size, void *data,size_t data_size);
 void destroyEntry(entry *en);
 
 typedef struct HashTable{
+	pthread_mutex_t mutex_lock;
     size_t k_size;
     entry **entries;
     size_t size;
@@ -33,4 +35,5 @@ enum dict_type{
 };
 
 hashTable *create_hashTable(enum dict_type t,size_t allocSize,bool (*compare_func)(entry*,void*),unsigned int (*hash_func)(void*));
+void destroy_hashTable(hashTable *h);
 #endif 

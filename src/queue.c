@@ -117,6 +117,41 @@ size_t batchDequeue(queue *q,void* data,size_t batch_size){
     
     if(q == NULL)
     {
+        return 0;
+    }
+
+    if (batch_size == 0){
+        return 0;
+    }
+    size_t size = batch_size;
+    node* toDel_array;
+    node* toDel;
+    acquire_lock(&(q->mutex_lock));
+    if (size > q->size)
+        size = q->size;
+    toDel_array = q->head;
+    for(size_t i=0;i<size;i++)
+    {
+        q->head = q->head->next;
+    }
+    q->size=q->size-size;
+    if (q->size == 0)
+        q->tail=NULL;
+    release_lock(&(q->mutex_lock));
+    for (size_t i=0;i<size;++i ){
+        toDel = toDel_array->next;
+        memcpy(data+i*q->allocationSize, toDel_array->data, q->allocationSize);
+        free(toDel_array->data);
+        free(toDel_array);
+        toDel_array=toDel;
+    }
+    return size;
+}
+
+size_t __batchDequeue(queue *q,void* data,size_t batch_size){
+    
+    if(q == NULL)
+    {
         return NULL;
     }
 
@@ -145,6 +180,32 @@ size_t batchDequeue(queue *q,void* data,size_t batch_size){
 }
 
 queue *batchEnqueue(queue *q,void* data,size_t batch_size){
+    if(q == NULL)
+    {
+        return NULL;
+    }
+    if (batch_size == 0){
+        return q;
+    }
+    node** toInsert_array = batchNodeCreate(data,q->allocationSize,batch_size);
+    acquire_lock(&(q->mutex_lock));
+	if(q->size == 0)
+	{ // First insertion
+		q->head = toInsert_array[0];
+        q->tail = toInsert_array[batch_size-1];
+	}
+	else
+	{
+		q->tail->next = toInsert_array[0];
+		q->tail = toInsert_array[batch_size-1];
+	}
+
+	q->size=q->size+batch_size;
+    release_lock(&(q->mutex_lock));
+    return q;
+}
+
+queue *__batchEnqueue(queue *q,void* data,size_t batch_size){
     if(q == NULL)
     {
         return NULL;

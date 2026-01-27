@@ -210,7 +210,7 @@ TEST("queue_creation"){
     int *batch_tmp_en = malloc(sizeof(int)*10); 
     int *batch_tmp_de = malloc(sizeof(int)*7);
     for (int i =0;i<10;++i){
-        batch_tmp_en[i] = i;
+        batch_tmp_en[i] = i+1;
     }
     //printf("Size of arr: %lu\n",sizeof(batch_tmp_en));
     printf("Creating batch enqueue\n");
@@ -221,7 +221,7 @@ TEST("queue_creation"){
 	dequeue(q,&ret_value);
 	dequeue(q,&ret_value);
 	dequeue(q,&ret_value);
-    dprint("Value dequeued: %d\n",ret_value);
+    printf("Value dequeued: %d\n",ret_value);
     printf("Batch Extraction\n");
     batchDequeue(q,batch_tmp_de,7);
     for (int i=0;i<7;i++)

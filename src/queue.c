@@ -61,12 +61,10 @@ node  *_dequeue(queue *q, void *data)
     node *toDel = q->head;
     if(q->size == 1)
     {
-        memcpy(data, toDel->data, q->allocationSize);
         q->head = q->tail = NULL;
     }
     else{
         q->head = q->head->next;
-        memcpy(data, toDel->data, q->allocationSize);
     }
     q->size--;
     return toDel;
@@ -108,6 +106,7 @@ queue *dequeue(queue *q, void *data)
     node *toDel = _dequeue(q,data);
     dprint("Releasing dequeue lock with size %ld\n",q->size);
     release_lock(&(q->mutex_lock));
+    memcpy(data, toDel->data, q->allocationSize);
     free(toDel->data);
     free(toDel);
     return q;

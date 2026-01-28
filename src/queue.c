@@ -138,6 +138,27 @@ node *dequeueNode(queue *q)
     return toDel;
 }
 
+queue *front(queue *q, void *data)
+{
+    if(q == NULL)
+    {
+        return NULL;
+    }
+
+    if(q->size == 0)
+    {
+        return NULL;
+    }
+
+    dprint("Acquire lock %ld\n",q);
+    acquire_lock(&(q->mutex_lock));
+    memcpy(data, q->head->data, q->allocationSize);
+
+    release_lock(&(q->mutex_lock));
+    return q;
+}
+
+
 size_t batchDequeue(queue *q,void* data,size_t batch_size){
     
     if(q == NULL)

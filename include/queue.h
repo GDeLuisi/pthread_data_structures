@@ -1,6 +1,7 @@
 #include <stdbool.h> //For true
 #include <stdio.h>
 #include <stdlib.h>
+#include "commons.h"
 typedef struct Queue queue;
 /**
  * @param allocSize Size of elements inserted

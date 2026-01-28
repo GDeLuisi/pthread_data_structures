@@ -112,6 +112,32 @@ queue *dequeue(queue *q, void *data)
     return q;
 }
 
+node *dequeueNode(queue *q)
+{
+    if(q == NULL)
+    {
+        return NULL;
+    }
+    node *toDel;
+    acquire_lock(&(q->mutex_lock));
+    while (q->size == 0)
+    {
+        condition_wait(&(q->empty_condition),&(q->mutex_lock));
+    }
+    toDel = q->head;
+    if(q->size == 1)
+    {
+        q->head = q->tail = NULL;
+    }
+    else{
+        q->head = q->head->next;
+    }
+    q->size--;
+    release_lock(&(q->mutex_lock));
+    toDel->next = NULL;
+    return toDel;
+}
+
 size_t batchDequeue(queue *q,void* data,size_t batch_size){
     
     if(q == NULL)
@@ -147,37 +173,6 @@ size_t batchDequeue(queue *q,void* data,size_t batch_size){
     return size;
 }
 
-size_t __batchDequeue(queue *q,void* data,size_t batch_size){
-    
-    if(q == NULL)
-    {
-        return NULL;
-    }
-
-    if (batch_size == 0){
-        return q;
-    }
-    void *data_el;
-    size_t toDel_c = 0;
-    size_t size = batch_size;
-    if (size > q->size)
-        size = q->size;
-    node* toDel_array[size];
-    
-    acquire_lock(&(q->mutex_lock));
-    for (size_t i=0;i<size;++i){
-        data_el = data+i*q->allocationSize;
-        toDel_array[i] = _dequeue(q,data_el);
-        toDel_c++;
-    }
-    release_lock(&(q->mutex_lock));
-    for (size_t i=0;i<toDel_c;++i ){
-        free(toDel_array[i]->data);
-        free(toDel_array[i]);
-    }
-    return size;
-}
-
 queue *batchEnqueue(queue *q,void* data,size_t batch_size){
     if(q == NULL)
     {
@@ -200,50 +195,6 @@ queue *batchEnqueue(queue *q,void* data,size_t batch_size){
 	}
 
 	q->size=q->size+batch_size;
-    release_lock(&(q->mutex_lock));
-    return q;
-}
-
-queue *__batchEnqueue(queue *q,void* data,size_t batch_size){
-    if(q == NULL)
-    {
-        return NULL;
-    }
-    if (batch_size == 0){
-        return q;
-    }
-    void *data_el;
-    node *nd;
-    node** toInsert_array = malloc(sizeof(node*)*batch_size);
-    for (size_t i=0;i<batch_size;i++){
-       data_el = data+i*q->allocationSize;
-       nd = createNode(data_el, q->allocationSize);
-       toInsert_array[i] = nd;
-    }
-    acquire_lock(&(q->mutex_lock));
-    for (size_t i=0;i<batch_size;++i){
-        _enqueue(q,toInsert_array[i]);
-    }
-    release_lock(&(q->mutex_lock));
-    return q;
-}
-
-queue *front(queue *q, void *data)
-{
-    if(q == NULL)
-    {
-        return NULL;
-    }
-
-    if(q->size == 0)
-    {
-        return NULL;
-    }
-
-    dprint("Acquire lock %ld\n",q);
-    acquire_lock(&(q->mutex_lock));
-    memcpy(data, q->head->data, q->allocationSize);
-
     release_lock(&(q->mutex_lock));
     return q;
 }
